@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Ask — Conversation Detail</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}"/>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+
+<!-- Navbar -->
+<nav>
+    <a class="nav-brand" th:href="@{/home}">🎙 Ask</a>
+    <div class="nav-actions">
+        <span class="nav-email" th:text="${email}"></span>
+        <a class="btn btn-outline btn-sm" th:href="@{/logout}">Logout</a>
+    </div>
+</nav>
+
+<div class="container">
+
+    <div style="margin-bottom:1rem;">
+        <a class="btn btn-outline btn-sm" th:href="@{/home}">← Back to home</a>
+    </div>
+
+    <div class="card">
+        <!-- Header -->
+        <div class="detail-header">
+            <span th:classappend="${conversation.type.name() == 'QUESTION'} ? 'badge-question' : (${conversation.type.name() == 'IDEA'} ? 'badge-idea' : 'badge-other')"
+                  class="badge"
+                  th:text="${conversation.type}"></span>
+            <span style="font-size:.85rem;color:#94a3b8;"
+                  th:text="${#temporals.format(conversation.createdAt, 'MMMM dd, yyyy · HH:mm')}"></span>
+        </div>
+
+        <!-- Transcript -->
+        <p class="detail-label">Transcript</p>
+        <p class="detail-text" th:text="${conversation.transcript}"></p>
+
+        <!-- Result -->
+        <div th:if="${conversation.result != null and !conversation.result.isEmpty()}">
+            <div class="divider"></div>
+            <p class="detail-label"
+               th:text="${conversation.type.name() == 'QUESTION'} ? 'Answer' : 'Guideline'"></p>
+            <div id="result-content" class="detail-text markdown-body"></div>
+            <script th:inline="javascript">
+                document.getElementById('result-content').innerHTML =
+                    marked.parse([[${conversation.result}]]);
+            </script>
+        </div>
+
+        <!-- No result for OTHER -->
+        <div th:if="${conversation.type.name() == 'OTHER'}">
+            <div class="divider"></div>
+            <p style="color:#94a3b8;font-size:.9rem;">This audio was classified as neither a question nor an idea, so no result was generated.</p>
+        </div>
+    </div>
+
+</div>
+</body>
+</html>
+

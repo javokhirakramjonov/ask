@@ -1,0 +1,15 @@
+{
+  "properties": [
+    {
+      "name": "app.audio.max-size-bytes",
+      "type": "java.lang.Long",
+      "description": "Maximum allowed audio file size in bytes. Defaults to 1 MB (1048576). Override with AUDIO_MAX_SIZE_BYTES env variable."
+    },
+    {
+      "name": "app.audio.max-duration-seconds",
+      "type": "java.lang.Integer",
+      "description": "Maximum allowed audio duration in seconds. Defaults to 60. Override with AUDIO_MAX_DURATION_SECONDS env variable."
+    }
+  ]
+}
+

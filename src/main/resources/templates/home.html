@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Ask — Home</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}"/>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+
+<!-- Navbar -->
+<nav>
+    <a class="nav-brand" th:href="@{/home}">🎙 Ask</a>
+    <div class="nav-actions">
+        <span class="nav-email" th:text="${email}"></span>
+        <a class="btn btn-outline btn-sm" th:href="@{/logout}">Logout</a>
+    </div>
+</nav>
+
+<div class="container">
+
+    <!-- Flash error -->
+    <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
+
+    <!-- Upload card -->
+    <div class="card upload-card">
+        <h2>🎤 Upload an audio file</h2>
+        <form th:action="@{/conversations/upload}" method="post" enctype="multipart/form-data"
+              th:data-max-size="${audioMaxSizeMb * 1024 * 1024}">
+            <div class="file-input-wrapper">
+                <input type="file" name="audio" accept="audio/*" required id="audioFileInput"/>
+                <button type="submit" class="btn btn-primary">Analyse</button>
+            </div>
+            <p style="margin-top:.75rem;font-size:.8rem;color:#6d6d85;"
+               th:text="'Max ' + ${audioMaxSizeMb} + ' MB · ' + ${audioMaxDurationSeconds} + 's · mp3, wav, m4a, ogg…'">
+                Max 1 MB · 60s · mp3, wav, m4a, ogg…
+            </p>
+        </form>
+
+        <div class="recorder-divider"><span>or record directly</span></div>
+
+        <!-- Voice recorder -->
+        <div class="recorder-section">
+            <div class="recorder-controls">
+                <button id="recordBtn" class="btn btn-record" type="button">
+                    <span class="rec-dot"></span> Record
+                </button>
+                <button id="stopBtn" class="btn btn-stop" type="button" disabled>
+                    ⏹ Stop
+                </button>
+                <span id="recTimer" class="rec-timer" style="display:none;">0:00</span>
+            </div>
+
+            <div id="recPreview" style="display:none; margin-top:1rem; flex-direction:column; align-items:center; gap:.75rem;">
+                <audio id="recAudio" controls style="width:100%; max-width:420px;"></audio>
+                <div style="display:flex;gap:.75rem;">
+                    <button id="recAnalyseBtn" class="btn btn-primary" type="button">Analyse recording</button>
+                    <button id="recDiscardBtn" class="btn btn-outline" type="button">Discard</button>
+                </div>
+            </div>
+
+            <p id="recError" class="rec-error" style="display:none;"></p>
+            <div id="recLoading" class="rec-loading" style="display:none;">
+                <div class="spinner"></div>
+                <span>Analysing…</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Conversations -->
+    <h2 style="margin-bottom:1rem;font-size:1.1rem;color:#475569;">Your conversations</h2>
+
+    <!-- Empty state -->
+    <div th:if="${conversations.isEmpty()}" class="card empty-state">
+        <div class="icon">💬</div>
+        <p>No conversations yet. Upload an audio file to get started!</p>
+    </div>
+
+    <!-- List -->
+    <div th:each="conv : ${conversations}">
+        <div class="card conversation-item">
+            <div class="meta">
+                <span th:classappend="${conv.type.name() == 'QUESTION'} ? 'badge-question' : (${conv.type.name() == 'IDEA'} ? 'badge-idea' : 'badge-other')"
+                      class="badge"
+                      th:text="${conv.type}"></span>
+                <span class="timestamp" th:text="${#temporals.format(conv.createdAt, 'MMM dd, yyyy HH:mm')}"></span>
+            </div>
+            <p class="transcript" th:text="${conv.transcript}"></p>
+            <div th:if="${conv.result != null and !conv.result.isEmpty()}"
+                 class="result-snippet markdown-body"
+                 th:attr="data-md=${conv.result}"></div>
+            <div>
+                <a class="btn btn-outline btn-sm" th:href="@{'/conversations/' + ${conv.id}}">View details →</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    <div class="pagination" th:if="${totalPages > 1}">
+        <a class="btn btn-outline btn-sm"
+           th:href="@{/home(page=${currentPage - 1})}"
+           th:classappend="${currentPage == 0} ? 'disabled'"
+           th:if="${currentPage > 0}">← Prev</a>
+
+        <span class="page-info" th:text="'Page ' + (${currentPage + 1}) + ' of ' + ${totalPages}"></span>
+
+        <a class="btn btn-outline btn-sm"
+           th:href="@{/home(page=${currentPage + 1})}"
+           th:if="${currentPage + 1 < totalPages}">Next →</a>
+    </div>
+
+</div>
+
+<script>
+document.querySelectorAll('.result-snippet[data-md]').forEach(function(el) {
+    el.innerHTML = marked.parse(el.getAttribute('data-md'));
+});
+</script>
+
+<script th:inline="javascript">
+/*<![CDATA[*/
+const AUDIO_MAX_SIZE_BYTES    = /*[[${audioMaxSizeMb * 1024 * 1024}]]*/ 1048576;
+const AUDIO_MAX_DURATION_SEC  = /*[[${audioMaxDurationSeconds}]]*/ 60;
+/*]]>*/
+
+// Client-side file size validation for the upload form
+document.querySelector('form[enctype="multipart/form-data"]').addEventListener('submit', function (e) {
+    const fileInput = document.getElementById('audioFileInput');
+    if (fileInput.files.length > 0 && fileInput.files[0].size > AUDIO_MAX_SIZE_BYTES) {
+        e.preventDefault();
+        alert('File is too large. Maximum allowed size is ' + (AUDIO_MAX_SIZE_BYTES / (1024 * 1024)) + ' MB.');
+    }
+});
+</script>
+
+<script>
+(function () {
+    const recordBtn   = document.getElementById('recordBtn');
+    const stopBtn     = document.getElementById('stopBtn');
+    const recTimer    = document.getElementById('recTimer');
+    const recPreview  = document.getElementById('recPreview');
+    const recAudio    = document.getElementById('recAudio');
+    const recAnalyse  = document.getElementById('recAnalyseBtn');
+    const recDiscard  = document.getElementById('recDiscardBtn');
+    const recError    = document.getElementById('recError');
+    const recLoading  = document.getElementById('recLoading');
+
+    let mediaRecorder, chunks = [], timerInterval, seconds = 0, audioBlob = null;
+
+    function showError(msg) {
+        recError.textContent = msg;
+        recError.style.display = 'block';
+    }
+    function hideError() { recError.style.display = 'none'; }
+
+    function formatTime(s) {
+        return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+    }
+
+    recordBtn.addEventListener('click', async () => {
+        hideError();
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            showError('Your browser does not support audio recording.');
+            return;
+        }
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            chunks = [];
+            mediaRecorder = new MediaRecorder(stream);
+            mediaRecorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+            mediaRecorder.onstop = () => {
+                stream.getTracks().forEach(t => t.stop());
+                audioBlob = new Blob(chunks, { type: 'audio/webm' });
+                recAudio.src = URL.createObjectURL(audioBlob);
+                recPreview.style.display = 'flex';
+            };
+            mediaRecorder.start();
+
+            seconds = 0;
+            recTimer.textContent = formatTime(0);
+            recTimer.style.display = 'inline';
+            timerInterval = setInterval(() => {
+                seconds++;
+                recTimer.textContent = formatTime(seconds);
+                if (seconds >= AUDIO_MAX_DURATION_SEC) stopRecording(); // server-configured limit
+            }, 1000);
+
+            recordBtn.disabled = true;
+            stopBtn.disabled = false;
+            recordBtn.classList.add('recording');
+        } catch (err) {
+            showError('Microphone access denied or unavailable.');
+        }
+    });
+
+    function stopRecording() {
+        if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+        clearInterval(timerInterval);
+        recTimer.style.display = 'none';
+        recordBtn.disabled = false;
+        stopBtn.disabled = true;
+        recordBtn.classList.remove('recording');
+    }
+
+    stopBtn.addEventListener('click', stopRecording);
+
+    recAnalyse.addEventListener('click', async () => {
+        if (!audioBlob) return;
+        hideError();
+        recPreview.style.display = 'none';
+        recLoading.style.display = 'flex';
+
+        const formData = new FormData();
+        formData.append('audio', audioBlob, 'recording.webm');
+        try {
+            const resp = await fetch('/conversations/upload-json', {
+                method: 'POST',
+                body: formData,
+                credentials: 'same-origin'
+            });
+            if (!resp.ok) throw new Error('Server error ' + resp.status);
+            const data = await resp.json();
+            window.location.href = '/conversations/' + data.id;
+        } catch (err) {
+            recLoading.style.display = 'none';
+            recPreview.style.display = 'flex';
+            showError('Failed to analyse recording: ' + err.message);
+        }
+    });
+
+    recDiscard.addEventListener('click', () => {
+        audioBlob = null;
+        recAudio.src = '';
+        recPreview.style.display = 'none';
+        hideError();
+    });
+})();
+</script>
+</body>
+</html>
+

@@ -1,0 +1,51 @@
+spring:
+  application:
+    name: ask
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/ask
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+
+  servlet:
+    multipart:
+      max-file-size: ${AUDIO_MAX_SIZE_MB:1}MB
+      max-request-size: ${AUDIO_MAX_SIZE_MB:1}MB
+
+  thymeleaf:
+    cache: false
+
+server:
+  port: 8080
+
+openai:
+  api-key: ${OPENAI_API_KEY:your-api-key-here}
+  model: gpt-4o
+
+app:
+  jwt:
+    secret: ${JWT_SECRET:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
+    expiration: 86400000
+  audio:
+    max-size-bytes: ${AUDIO_MAX_SIZE_BYTES:1048576}       # default 1 MB
+    max-duration-seconds: ${AUDIO_MAX_DURATION_SECONDS:60} # default 1 minute
+
+logging:
+  level:
+    root: INFO
+    org.example.ask: DEBUG           # application logs at DEBUG+
+    org.springframework.web: WARN    # suppress noisy Spring Web info
+    org.springframework.security: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} %highlight(%-5level) [%thread] %cyan(%logger{36}) - %msg%n"
+

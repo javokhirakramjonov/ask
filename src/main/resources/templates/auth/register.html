@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Ask — Register</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}"/>
+</head>
+<body>
+<div class="auth-wrapper">
+    <div class="auth-card">
+        <h1>Create account</h1>
+        <p class="subtitle">Start asking questions with your voice</p>
+
+        <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
+
+        <form th:action="@{/register}" method="post" th:object="${registerRequest}">
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" th:field="*{email}" placeholder="you@example.com" autocomplete="email"/>
+                <div class="form-error" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></div>
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" th:field="*{password}" placeholder="Min 6 characters" autocomplete="new-password"/>
+                <div class="form-error" th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></div>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;">Create account</button>
+        </form>
+
+        <div class="auth-footer">
+            Already have an account? <a th:href="@{/login}">Sign in</a>
+        </div>
+    </div>
+</div>
+</body>
+</html>
+
